@@ -9,11 +9,11 @@
 		<version>3.3.0</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.e-commerce</groupId>
-	<artifactId>e-commerce</artifactId>
+	<groupId>com.healthcare</groupId>
+	<artifactId>healthcare</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>e-commerce</name>
-	<description>Demo project for Spring Boot</description>
+	<name>healthcare</name>
+	<description>Healthcare Spring Boot Project</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
