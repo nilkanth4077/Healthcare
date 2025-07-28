@@ -11,23 +11,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/admin")
-@PreAuthorize("hasRole('ADMIN')")
-public class AdminController {
+@RequestMapping("/doctor")
+@PreAuthorize("hasRole('DOCTOR')")
+public class DoctorController {
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private AuditLogRepo auditLogRepo;
 
     @Autowired
     private HttpServletRequest request;
-
-    @Autowired
-    private UserService userService;
 
     @GetMapping("/hello")
     public StandardDTO<String> hello(@RequestHeader String token) throws UserException {
@@ -47,7 +50,7 @@ public class AdminController {
         auditLogRepo.save(log);
 
         StandardDTO<String> rs = new StandardDTO<>();
-        rs.setData("Hello Admin: " + user.getFirstName());
+        rs.setData("Hello Doctor: " + user.getFirstName());
         rs.setMetadata(null);
         rs.setStatusCode(HttpStatus.OK.value());
         rs.setMessage("Hello response successful");

@@ -4,6 +4,11 @@ import com.healthcare.entity.AuditLog;
 import com.healthcare.entity.User;
 import com.healthcare.repository.AuditLogRepo;
 import com.healthcare.repository.UserRepo;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -15,6 +20,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
 
 @SpringBootApplication
+@OpenAPIDefinition(
+		info = @Info(
+				title = "Healthcare Backend",
+				version = "1.0",
+				description = "This is the backend API documentation for the Healthcare app."
+		),
+		security = @SecurityRequirement(name = "bearerAuth")
+)
+@SecurityScheme(
+		name = "bearerAuth",
+		type = SecuritySchemeType.HTTP,
+		scheme = "bearer",
+		bearerFormat = "JWT"
+)
 public class HealthCareApplication {
 
 	@Autowired
