@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -98,6 +100,13 @@ public class DoctorService {
 
         auditLogRepository.save(log);
 
-        return new StandardDTO<>(201, "Doctor registered successfully", doctor, null);
+        Map<String, Object> res = new HashMap<>();
+        res.put("user", user);
+        res.put("doctorId", doctor.getId());
+        res.put("verificationStatus", doctor.getVerificationStatus());
+        res.put("specialization", doctor.getSpecialization());
+        res.put("documentSize", doctor.getDocument().length);
+
+        return new StandardDTO<>(201, "Doctor registered successfully", res, null);
     }
 }
