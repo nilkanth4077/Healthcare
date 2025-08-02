@@ -1,16 +1,10 @@
 package com.healthcare.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class SignupDTO {
+public class DoctorRegistrationDTO {
 
     @Schema(example = "Neel")
     private String firstName;
@@ -21,16 +15,16 @@ public class SignupDTO {
     @Schema(example = "neel123@gmail.com")
     private String email;
 
-    @Schema(example = "P@ssw0rd123", description = "Enter your password")
+    @Schema(example = "StrongPassword123!")
     private String password;
 
-    @Schema(example = "P@ssw0rd123", description = "Confirm your password")
+    @Schema(example = "StrongPassword123!")
     private String confirmPassword;
-
-    @Schema(example = "PATIENT")
-    private String role;
 
     @Schema(example = "9876543210")
     private String mobile;
+
+    @Schema(example = "Cardiologist")
+    private String specialization;
 
 }

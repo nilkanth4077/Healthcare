@@ -1,17 +1,20 @@
 package com.healthcare.controller;
 
-import com.healthcare.dto.LoginRequest;
-import com.healthcare.dto.SignupDTO;
-import com.healthcare.dto.StandardDTO;
+import com.healthcare.dto.*;
 import com.healthcare.entity.AuditLog;
 import com.healthcare.entity.User;
 import com.healthcare.exception.UserException;
 import com.healthcare.repository.AuditLogRepo;
 import com.healthcare.repository.UserRepo;
+import com.healthcare.service.DoctorService;
 import com.healthcare.service.UserService;
 import com.healthcare.util.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -35,10 +39,11 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuditLogRepo auditLogRepo;
+    private final DoctorService doctorService;
     private final HttpServletRequest request;
 
     public AuthController(AuthenticationManager authenticationManager, UserRepo userRepository, UserService userService,
-                          PasswordEncoder passwordEncoder, JwtUtil jwtUtil, AuditLogRepo auditLogRepo, HttpServletRequest request) {
+                          PasswordEncoder passwordEncoder, JwtUtil jwtUtil, AuditLogRepo auditLogRepo, HttpServletRequest request, DoctorService doctorService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -46,6 +51,7 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
         this.auditLogRepo = auditLogRepo;
         this.request = request;
+        this.doctorService = doctorService;
     }
 
     @PostMapping("/signup")
@@ -104,6 +110,8 @@ public class AuthController {
         log.setAction("User Registration");
         log.setIpAddress(request.getRemoteAddr());
         log.setActorRole(user.getRole());
+        log.setTargetEntity("Doctor");
+        log.setTargetId(user.getId());
         log.setTimestamp(LocalDateTime.now());
         auditLogRepo.save(log);
 
@@ -114,6 +122,33 @@ public class AuthController {
         response.setMetadata(null);
         return response;
     }
+
+
+    @Operation(
+            summary = "Register new doctor",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = "multipart/form-data",
+                            schema = @Schema(implementation = DoctorMultipartSchema.class)
+                    )
+            )
+    )
+    @PostMapping(value = "/register-doctor")
+    public ResponseEntity<StandardDTO<?>> registerDoctor(
+            @RequestParam("firstName") String firstName,
+            @RequestParam("lastName") String lastName,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("confirmPassword") String confirmPassword,
+            @RequestParam("mobile") String mobile,
+            @RequestParam("specialization") String specialization,
+            @RequestParam("documentFile") MultipartFile documentFile
+    ) throws Exception {
+        StandardDTO<?> response = doctorService.registerDoctor(firstName, lastName, email, password, confirmPassword, mobile, specialization, documentFile);
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
 
     @PostMapping("/login")
     public ResponseEntity<StandardDTO<Map<String, Object>>> login(@RequestBody LoginRequest loginRequest) {
