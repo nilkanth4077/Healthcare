@@ -2,6 +2,7 @@ package com.healthcare.controller;
 
 import com.healthcare.dto.StandardDTO;
 import com.healthcare.entity.AuditLog;
+import com.healthcare.entity.Doctor;
 import com.healthcare.entity.Specialization;
 import com.healthcare.entity.User;
 import com.healthcare.exception.UserException;
@@ -16,6 +17,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -65,5 +70,21 @@ public class AdminController {
 
         Specialization response = doctorService.addSpecialization(specialization);
         return new StandardDTO<>(HttpStatus.OK.value(), "Speciality added successfully", response, null);
+    }
+
+    @GetMapping("/all-doctors")
+    public StandardDTO<List<Map<String, Object>>> getAllDoctors() {
+        List<Doctor> doctors = doctorService.getAllDoctors();
+
+        List<Map<String, Object>> responseList = new ArrayList<>();
+        for (Doctor doc : doctors) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", doc.getId());
+            map.put("specialization", doc.getSpecialization());
+            map.put("verificationStatus", doc.getVerificationStatus());
+            map.put("doctor", doc.getUser());
+            responseList.add(map);
+        }
+        return new StandardDTO<>(HttpStatus.OK.value(), "List of doctors fetched successfully", responseList, null);
     }
 }

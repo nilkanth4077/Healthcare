@@ -1,25 +1,19 @@
 package com.healthcare.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+@Data
 public class LoginRequest {
 
-	private String email;
-	private String password;
-	public LoginRequest() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	public String getEmail() {
-		return email;
-	}
-	public void setEmail(String email) {
-		this.email = email;
-	}
-	public String getPassword() {
-		return password;
-	}
-	public void setPassword(String password) {
-		this.password = password;
-	}
-	
-	
+    @Schema(example = "nilkanth4077@gmail.com")
+    private String email;
+
+    @Schema(example = "Nilkanth@4077")
+    private String password;
+
+    public LoginRequest() {
+        super();
+    }
+
 }

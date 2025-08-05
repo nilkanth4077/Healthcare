@@ -1,6 +1,5 @@
 package com.healthcare.service;
 
-import com.healthcare.dto.DoctorRegistrationDTO;
 import com.healthcare.dto.StandardDTO;
 import com.healthcare.entity.AuditLog;
 import com.healthcare.entity.Doctor;
@@ -16,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -143,5 +141,13 @@ public class DoctorService {
 
     public List<Doctor> getDoctorBySpeciality(String speciality) {
         return doctorRepository.findBySpecializationIgnoreCase(speciality);
+    }
+
+    public List<Doctor> getAllDoctors() {
+        return doctorRepository.findAll();
+    }
+
+    public Optional<Doctor> getDoctorById(Long id) {
+        return doctorRepository.findById(id);
     }
 }
