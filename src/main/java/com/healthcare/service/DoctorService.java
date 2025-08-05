@@ -4,9 +4,11 @@ import com.healthcare.dto.DoctorRegistrationDTO;
 import com.healthcare.dto.StandardDTO;
 import com.healthcare.entity.AuditLog;
 import com.healthcare.entity.Doctor;
+import com.healthcare.entity.Specialization;
 import com.healthcare.entity.User;
 import com.healthcare.repository.AuditLogRepo;
 import com.healthcare.repository.DoctorRepo;
+import com.healthcare.repository.SpecializationRepo;
 import com.healthcare.repository.UserRepo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +21,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +32,7 @@ public class DoctorService {
     private final DoctorRepo doctorRepository;
     private final UserRepo userRepository;
     private final AuditLogRepo auditLogRepository;
+    private final SpecializationRepo specializationRepository;
     private final HttpServletRequest request;
 
     @Autowired
@@ -108,5 +113,35 @@ public class DoctorService {
         res.put("documentSize", doctor.getDocument().length);
 
         return new StandardDTO<>(201, "Doctor registered successfully", res, null);
+    }
+
+    public Specialization addSpecialization(Specialization specialization) {
+        return specializationRepository.save(specialization);
+    }
+
+    public List<Specialization> getAllSpecializations() {
+        return specializationRepository.findAll();
+    }
+
+    public Specialization updateSpecialization(Long id, Specialization updated) {
+        Optional<Specialization> optional = specializationRepository.findById(id);
+        if (optional.isPresent()) {
+            Specialization spec = optional.get();
+            spec.setSpecialization(updated.getSpecialization());
+            return specializationRepository.save(spec);
+        } else {
+            throw new RuntimeException("Specialization not found with id " + id);
+        }
+    }
+
+    public void deleteSpecialization(Long id) {
+        if (!specializationRepository.existsById(id)) {
+            throw new RuntimeException("Specialization not found with id " + id);
+        }
+        specializationRepository.deleteById(id);
+    }
+
+    public List<Doctor> getDoctorBySpeciality(String speciality) {
+        return doctorRepository.findBySpecializationIgnoreCase(speciality);
     }
 }

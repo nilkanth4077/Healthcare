@@ -2,9 +2,11 @@ package com.healthcare.controller;
 
 import com.healthcare.dto.StandardDTO;
 import com.healthcare.entity.AuditLog;
+import com.healthcare.entity.Specialization;
 import com.healthcare.entity.User;
 import com.healthcare.exception.UserException;
 import com.healthcare.repository.AuditLogRepo;
+import com.healthcare.service.DoctorService;
 import com.healthcare.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ public class AdminController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private DoctorService doctorService;
 
     @GetMapping("/hello")
     public StandardDTO<String> hello(@RequestHeader String token) throws UserException {
@@ -53,5 +58,12 @@ public class AdminController {
         rs.setMessage("Hello response successful");
 
         return rs;
+    }
+
+    @PostMapping("/addSpeciality")
+    public StandardDTO<?> add(@RequestBody Specialization specialization) {
+
+        Specialization response = doctorService.addSpecialization(specialization);
+        return new StandardDTO<>(HttpStatus.OK.value(), "Speciality added successfully", response, null);
     }
 }
