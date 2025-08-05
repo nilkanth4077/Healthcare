@@ -27,7 +27,7 @@ public class SignupDTO {
     @Schema(example = "P@ssw0rd123", description = "Confirm your password")
     private String confirmPassword;
 
-    @Schema(example = "PATIENT")
+    @Schema(example = "USER")
     private String role;
 
     @Schema(example = "9876543210")
