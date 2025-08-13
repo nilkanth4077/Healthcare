@@ -39,6 +39,7 @@ public class AnonymousController {
         res.put("mobile", doc.getUser().getMobile());
         res.put("specialization", doc.getSpecialization());
         res.put("verificationStatus", doc.getVerificationStatus());
+        res.put("documentSize", doc.getDocument().length);
 
         if (doc.getDocument() != null) {
             String base64Doc = Base64.getEncoder().encodeToString(doc.getDocument());

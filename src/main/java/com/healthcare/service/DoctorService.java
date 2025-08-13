@@ -5,6 +5,7 @@ import com.healthcare.entity.AuditLog;
 import com.healthcare.entity.Doctor;
 import com.healthcare.entity.Specialization;
 import com.healthcare.entity.User;
+import com.healthcare.exception.UserException;
 import com.healthcare.repository.AuditLogRepo;
 import com.healthcare.repository.DoctorRepo;
 import com.healthcare.repository.SpecializationRepo;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +34,7 @@ public class DoctorService {
     private final AuditLogRepo auditLogRepository;
     private final SpecializationRepo specializationRepository;
     private final HttpServletRequest request;
+    private final UserService userService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -99,7 +102,7 @@ public class DoctorService {
         log.setTargetId(doctor.getId());
         log.setAction("REGISTER");
         log.setMessage("Doctor registered with email: " + user.getEmail());
-        log.setIpAddress("UNKNOWN");
+        log.setIpAddress(request.getRemoteAddr());
 
         auditLogRepository.save(log);
 
@@ -137,6 +140,41 @@ public class DoctorService {
             throw new RuntimeException("Specialization not found with id " + id);
         }
         specializationRepository.deleteById(id);
+    }
+
+    public void deleteDoctor(Long id, String token) throws UserException {
+
+        Doctor doc = doctorRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("Doctor not found with id: " + id));
+        User sessionUser = userService.getProfileByToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with provided token"));
+
+        if (!doctorRepository.existsById(id)) {
+            AuditLog log = new AuditLog();
+            log.setActorId(null);
+            log.setMessage("Deletion failed for doctor '" + doc.getUser().getEmail() + "'");
+            log.setAction("Doctor Deletion Failed");
+            log.setIpAddress(request.getRemoteAddr());
+            log.setActorRole("ADMIN");
+            log.setActorId(sessionUser.getId());
+            log.setTimestamp(LocalDateTime.now());
+            auditLogRepository.save(log);
+            throw new RuntimeException("Doctor not found with id " + id);
+        }
+
+        AuditLog log = new AuditLog();
+        log.setActorId(null);
+        log.setMessage("Deletion successful for email '" + doc.getUser().getEmail() + "'");
+        log.setAction("Doctor Deletion Successful");
+        log.setIpAddress(request.getRemoteAddr());
+        log.setActorRole("ADMIN");
+        log.setActorId(sessionUser.getId());
+        log.setTimestamp(LocalDateTime.now());
+        auditLogRepository.save(log);
+
+        doctorRepository.deleteById(id);
+        userRepository.deleteById(doc.getUser().getId());
+
     }
 
     public List<Doctor> getDoctorBySpeciality(String speciality) {

@@ -87,4 +87,17 @@ public class AdminController {
         }
         return new StandardDTO<>(HttpStatus.OK.value(), "List of doctors fetched successfully", responseList, null);
     }
+
+    @DeleteMapping("/delete/doctor")
+    public StandardDTO<?> deleteDoctor(@RequestParam Long id, @RequestHeader("Authorization") String token) throws UserException {
+
+        String actualToken = token.replace("Bearer ", "");
+
+        doctorService.deleteDoctor(id, actualToken);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("id", id);
+
+        return new StandardDTO<>(HttpStatus.OK.value(), "Doctor deleted successfully", res, null);
+    }
 }
