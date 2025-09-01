@@ -188,4 +188,20 @@ public class DoctorService {
     public Optional<Doctor> getDoctorById(Long id) {
         return doctorRepository.findById(id);
     }
+
+    public Map<String, Object> findDoctorByUserId(Long userId) {
+        Doctor doc = doctorRepository.findByUserId(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("Doctor not found with provided user Id"));
+
+        return Map.of(
+                "doctorId", doc.getId(),
+                "userId", doc.getUser().getId(),
+                "speciality", doc.getSpecialization(),
+                "verificationStatus", doc.getVerificationStatus(),
+                "email", doc.getUser().getEmail(),
+                "firstName", doc.getUser().getFirstName(),
+                "lastName", doc.getUser().getLastName(),
+                "mobile", doc.getUser().getMobile()
+        );
+    }
 }

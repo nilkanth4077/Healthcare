@@ -2,21 +2,23 @@ package com.healthcare.controller;
 
 import com.healthcare.dto.StandardDTO;
 import com.healthcare.entity.AuditLog;
+import com.healthcare.entity.Doctor;
 import com.healthcare.entity.User;
 import com.healthcare.exception.UserException;
 import com.healthcare.repository.AuditLogRepo;
+import com.healthcare.repository.DoctorRepo;
+import com.healthcare.service.DoctorService;
 import com.healthcare.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/doctor")
@@ -31,6 +33,9 @@ public class DoctorController {
 
     @Autowired
     private HttpServletRequest request;
+
+    @Autowired
+    private DoctorService doctorService;
 
     @GetMapping("/hello")
     public StandardDTO<String> hello(@RequestHeader String token) throws UserException {
@@ -56,5 +61,19 @@ public class DoctorController {
         rs.setMessage("Hello response successful");
 
         return rs;
+    }
+
+    @GetMapping("/by-user-id")
+    public ResponseEntity<StandardDTO<Map<String, Object>>> getDoctorByUserId(@RequestParam Long userId) {
+        try {
+            Map<String, Object> res = doctorService.findDoctorByUserId(userId);
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "Doctor fetched successfully", res, null)
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null, null)
+            );
+        }
     }
 }

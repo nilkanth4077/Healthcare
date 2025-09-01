@@ -35,4 +35,6 @@ public class User {
     @Schema(example = "DOCTOR", description = "Role of the user")
     private String role;
 
+    @Schema(example = "true", description = "Describe if active or inactive")
+    private Boolean active;
 }

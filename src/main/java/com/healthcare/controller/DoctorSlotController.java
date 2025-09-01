@@ -1,9 +1,6 @@
 package com.healthcare.controller;
 
-import com.healthcare.dto.AddBulkSlotsRequest;
-import com.healthcare.dto.SlotResponse;
-import com.healthcare.dto.StandardDTO;
-import com.healthcare.dto.UpdateSlotRequest;
+import com.healthcare.dto.*;
 import com.healthcare.entity.DoctorSlot;
 import com.healthcare.exception.UserException;
 import com.healthcare.repository.DoctorSlotRepository;
@@ -28,13 +25,15 @@ public class DoctorSlotController {
     private final DoctorSlotRepository slotRepository;
 
     @PostMapping("/add")
-    public ResponseEntity<StandardDTO<Map<String, Object>>> addBulkSlots(@RequestBody AddBulkSlotsRequest request) {
+    public ResponseEntity<StandardDTO<Map<String, Object>>> addBulkSlots(@RequestBody AddBulkSlotsRequest request, @RequestHeader("Authorization") String token) {
         try {
+            String actualToken = token.replace("Bearer ", "");
             Map<String, Object> response = slotService.addSlots(
                     request.getDoctorId(),
                     request.getSlotType(),
                     request.getStartDate(),
                     request.getEndDate(),
+                    actualToken,
                     request.getTimes().toArray(new LocalTime[0])
             );
             Map<String, Object> metadata = new HashMap<>();
@@ -50,9 +49,10 @@ public class DoctorSlotController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<StandardDTO<Object>> updateSlot(@RequestBody UpdateSlotRequest request, @RequestHeader String token) {
+    public ResponseEntity<StandardDTO<UpdateSlotResponse>> updateSlot(@RequestBody UpdateSlotRequest request, @RequestHeader("Authorization") String token) {
         try {
-            DoctorSlot response = slotService.updateSlot(request.getSlotId(), request.getNewStartTime(), request.getSlotType(), request.getAvailable(), token);
+            String actualToken = token.replace("Bearer ", "");
+            UpdateSlotResponse response = slotService.updateSlot(request.getSlotId(), request.getNewStartTime(), request.getSlotType(), request.getAvailable(), actualToken);
             return ResponseEntity.ok(
                     new StandardDTO<>(HttpStatus.OK.value(), "Slot updated successfully", response, null)
             );

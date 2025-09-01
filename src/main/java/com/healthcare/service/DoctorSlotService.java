@@ -1,6 +1,7 @@
 package com.healthcare.service;
 
 import com.healthcare.dto.StandardDTO;
+import com.healthcare.dto.UpdateSlotResponse;
 import com.healthcare.entity.AuditLog;
 import com.healthcare.entity.Doctor;
 import com.healthcare.entity.DoctorSlot;
@@ -38,10 +39,18 @@ public class DoctorSlotService {
             String slotType,
             LocalDate startDate,
             LocalDate endDate,
-            LocalTime... times) {
+            String token,
+            LocalTime... times) throws UserException {
 
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
+        User sessionUser = userService.getProfileByToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with provided token"));
+        List<DoctorSlot> slotsToAdd = new ArrayList<>();
+
+        if (!sessionUser.getEmail().equals(doctor.getUser().getEmail())) {
+            throw new RuntimeException("You are not allowed to add slots of other doctor");
+        }
 
         if (!"VERIFIED".equalsIgnoreCase(doctor.getVerificationStatus())) {
             throw new IllegalStateException("Doctor is not verified yet");
@@ -52,20 +61,30 @@ public class DoctorSlotService {
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             for (LocalTime time : times) {
                 LocalDateTime startDateTime = LocalDateTime.of(date, time);
+                LocalDateTime endDateTime = startDateTime.plusMinutes(30);
 
                 if (startDateTime.isBefore(LocalDateTime.now())) {
-                    continue; // Skip past slots
+                    throw new IllegalArgumentException(
+                            "Can not add slots in past for date " + startDateTime.toString().substring(0, 10) + " from " + startDateTime.toString().substring(11, 16) + " to " + endDateTime.toString().substring(11, 16)
+                    );
                 }
-
-                LocalDateTime endDateTime = startDateTime.plusMinutes(30);
 
                 boolean overlaps = !slotRepository
                         .findOverlappingSlots(doctorId, slotType, startDateTime, endDateTime)
                         .isEmpty();
 
-                if (!overlaps) {
-                    slotsToSave.add(new DoctorSlot(null, doctor, slotType, startDateTime, endDateTime, true));
+                boolean overlapsPending = slotsToSave.stream().anyMatch(s ->
+                        s.getStartTime().isBefore(endDateTime) &&
+                                s.getEndTime().isAfter(startDateTime)
+                );
+
+                if (overlaps || overlapsPending) {
+                    throw new IllegalArgumentException(
+                            "Slot overlap detected for " + startDateTime.toString().substring(0, 10) + " from " + startDateTime.toString().substring(11, 16) + " to " + endDateTime.toString().substring(11, 16)
+                    );
                 }
+
+                slotsToSave.add(new DoctorSlot(null, doctor, slotType, startDateTime, endDateTime, true));
             }
         }
 
@@ -76,7 +95,7 @@ public class DoctorSlotService {
         );
     }
 
-    public DoctorSlot updateSlot(Long slotId, LocalDateTime newStartTime, String slotType, Boolean available, String token) {
+    public UpdateSlotResponse updateSlot(Long slotId, LocalDateTime newStartTime, String slotType, Boolean available, String token) {
         DoctorSlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new IllegalArgumentException("Slot not found"));
         String doctorEmail = jwtUtil.extractEmail(token);
@@ -110,7 +129,15 @@ public class DoctorSlotService {
 
         slotRepository.save(slot);
 
-        return slot;
+        UpdateSlotResponse response = new UpdateSlotResponse();
+        response.setDoctorId(slot.getDoctor().getId());
+        response.setSlotId(slot.getId());
+        response.setSlotType(slot.getSlotType());
+        response.setAvailable(slot.isAvailable());
+        response.setStartTime(slot.getStartTime());
+        response.setEndTime(slot.getEndTime());
+
+        return response;
     }
 
     public StandardDTO<Map<String, Object>> getSlotWithDoctor(Long slotId) {
