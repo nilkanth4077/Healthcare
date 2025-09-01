@@ -2,6 +2,7 @@ package com.healthcare.controller;
 
 import com.healthcare.dto.*;
 import com.healthcare.entity.AuditLog;
+import com.healthcare.entity.Doctor;
 import com.healthcare.entity.User;
 import com.healthcare.exception.UserException;
 import com.healthcare.repository.AuditLogRepo;
@@ -20,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -101,6 +103,7 @@ public class AuthController {
         user.setMobile(userRequest.getMobile());
         user.setRole(userRequest.getRole());
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        user.setActive(true);
 
         userRepository.save(user);
 
@@ -153,10 +156,21 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<StandardDTO<Map<String, Object>>> login(@RequestBody LoginRequest loginRequest) {
         AuditLog log = new AuditLog();
-        Optional<User> userByEmail = userRepository.findByEmail(loginRequest.getEmail());
+        User userByEmail = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + loginRequest.getEmail()));
+
         String email = loginRequest.getEmail();
 
         try {
+            if (userByEmail.getRole().equalsIgnoreCase("DOCTOR")) {
+                Map<String, Object> doctor = doctorService.findDoctorByUserId(userByEmail.getId());
+                if (!"Verified".equalsIgnoreCase(doctor.get("verificationStatus").toString())) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                            new StandardDTO<>(HttpStatus.UNAUTHORIZED.value(), "Doctor is not verified yet", null, null)
+                    );
+                }
+            }
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, loginRequest.getPassword()));
 
@@ -170,7 +184,7 @@ public class AuthController {
             log.setAction("Login");
             log.setTimestamp(LocalDateTime.now());
             log.setIpAddress(request.getRemoteAddr());
-            log.setActorId(userByEmail.map(User::getId).orElse(null));
+            log.setActorId(userByEmail.getId());
             log.setActorRole(role);
             log.setMessage("'" + email + "' logged in successfully");
             auditLogRepo.save(log);
@@ -179,30 +193,22 @@ public class AuthController {
             responseData.put("token", token);
             responseData.put("user", userByEmail);
 
-            StandardDTO<Map<String, Object>> response = new StandardDTO<>();
-            response.setStatusCode(HttpStatus.OK.value());
-            response.setMessage("Login successful");
-            response.setData(responseData);
-            response.setMetadata(null);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "Slots added successfully", responseData, null)
+            );
 
         } catch (AuthenticationException ex) {
             log.setAction("Failed Login");
             log.setTimestamp(LocalDateTime.now());
             log.setIpAddress(request.getRemoteAddr());
-            log.setActorId(userByEmail.map(User::getId).orElse(null));
-            log.setActorRole(userByEmail.map(User::getRole).orElse("UNKNOWN"));
+            log.setActorId(userByEmail.getId());
+            log.setActorRole(userByEmail.getEmail());
             log.setMessage("Failed login attempt with email '" + email + "'");
             auditLogRepo.save(log);
 
-            StandardDTO<Map<String, Object>> errorResponse = new StandardDTO<>();
-            errorResponse.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            errorResponse.setMessage("Invalid email or password");
-            errorResponse.setData(null);
-            errorResponse.setMetadata(null);
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new StandardDTO<>(HttpStatus.UNAUTHORIZED.value(), ex.getMessage(), null, null)
+            );
         }
     }
 

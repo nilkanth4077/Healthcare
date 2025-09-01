@@ -41,6 +41,26 @@ public class DoctorService {
 
     public StandardDTO<?> registerDoctor(String firstName, String lastName, String email, String password, String confirmPassword, String mobile, String specialization, MultipartFile documentFile) throws Exception {
 
+        long maxFileSize = 2 * 1024 * 1024;
+
+        if (documentFile.getSize() > maxFileSize) {
+            AuditLog log = new AuditLog();
+            log.setActorId(null);
+            log.setMessage("Signup failed: File size exceeded for " + email);
+            log.setAction("Doctor Registration Failed");
+            log.setIpAddress(request.getRemoteAddr());
+            log.setActorRole("UNKNOWN");
+            log.setTimestamp(LocalDateTime.now());
+            auditLogRepository.save(log);
+
+            StandardDTO<User> response = new StandardDTO<>();
+            response.setStatusCode(HttpStatus.BAD_REQUEST.value());
+            response.setMessage("File size exceeds the limit. Only files up to 2MB are allowed.");
+            response.setData(null);
+            response.setMetadata(null);
+            return response;
+        }
+
         if (!password.equals(confirmPassword)) {
             AuditLog log = new AuditLog();
             log.setActorId(null);
@@ -84,6 +104,7 @@ public class DoctorService {
         user.setPassword(passwordEncoder.encode(password));
         user.setMobile(mobile);
         user.setRole("DOCTOR");
+        user.setActive(true);
 
         user = userRepository.save(user);
 
@@ -178,7 +199,7 @@ public class DoctorService {
     }
 
     public List<Doctor> getDoctorBySpeciality(String speciality) {
-        return doctorRepository.findBySpecializationIgnoreCase(speciality);
+        return doctorRepository.findVerifiedDoctorsBySpecialization(speciality);
     }
 
     public List<Doctor> getAllDoctors() {
