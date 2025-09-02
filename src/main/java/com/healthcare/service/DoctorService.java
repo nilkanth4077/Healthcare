@@ -12,6 +12,7 @@ import com.healthcare.repository.AuditLogRepo;
 import com.healthcare.repository.DoctorRepo;
 import com.healthcare.repository.SpecializationRepo;
 import com.healthcare.repository.UserRepo;
+import com.healthcare.util.FileUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,15 +39,25 @@ public class DoctorService {
     private final SpecializationRepo specializationRepository;
     private final HttpServletRequest request;
     private final UserService userService;
+    private final FileUtil fileUtil;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     public StandardDTO<?> registerDoctor(String firstName, String lastName, String email, String password, String confirmPassword, String mobile, String specialization, MultipartFile documentFile) throws Exception {
 
+        if (documentFile != null && !fileUtil.getFileExtension(documentFile).equalsIgnoreCase("pdf")) {
+            StandardDTO<User> response = new StandardDTO<>();
+            response.setStatusCode(HttpStatus.BAD_REQUEST.value());
+            response.setMessage("Only PDF file allowed");
+            response.setData(null);
+            response.setMetadata(null);
+            return response;
+        }
+
         long maxFileSize = 2 * 1024 * 1024;
 
-        if (documentFile.getSize() > maxFileSize) {
+        if (documentFile != null && documentFile.getSize() > maxFileSize) {
             AuditLog log = new AuditLog();
             log.setActorId(null);
             log.setMessage("Signup failed: File size exceeded for " + email);
@@ -238,6 +249,10 @@ public class DoctorService {
                 .orElseThrow(() -> new UsernameNotFoundException("Doctor not found with id: " + doctorId));
         User sessionUser = userService.getProfileByToken(token)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with provided token"));
+
+        if (docFile != null && !fileUtil.getFileExtension(docFile).equalsIgnoreCase("pdf")) {
+            throw new IllegalArgumentException("Only PDF files allowed");
+        }
 
         long maxFileSize = 2 * 1024 * 1024;
 
