@@ -1,6 +1,8 @@
 package com.healthcare.service;
 
 import com.healthcare.dto.StandardDTO;
+import com.healthcare.dto.UpdateDoctorRequest;
+import com.healthcare.dto.UpdateDoctorResponse;
 import com.healthcare.entity.AuditLog;
 import com.healthcare.entity.Doctor;
 import com.healthcare.entity.Specialization;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -224,5 +227,73 @@ public class DoctorService {
                 "lastName", doc.getUser().getLastName(),
                 "mobile", doc.getUser().getMobile()
         );
+    }
+
+    public UpdateDoctorResponse updateDoctorDetails(Long doctorId, String firstName, String lastName,
+                                                    String email, String verificationStatus,
+                                                    String specialization, String mobile, Boolean active,
+                                                    MultipartFile docFile,
+                                                    String token) throws UserException, IOException {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new UsernameNotFoundException("Doctor not found with id: " + doctorId));
+        User sessionUser = userService.getProfileByToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with provided token"));
+
+        long maxFileSize = 2 * 1024 * 1024;
+
+        if (docFile != null && docFile.getSize() > maxFileSize) {
+            throw new IllegalArgumentException("File size exceeded (Maximum size: 2MB)");
+        }
+
+        String role = sessionUser.getRole();
+
+        if ("DOCTOR".equalsIgnoreCase(role)) {
+            if (!doctor.getUser().getEmail().equals(sessionUser.getEmail())) {
+                throw new SecurityException("You are not allowed to update other doctor's details");
+            }
+        } else if ("ADMIN".equalsIgnoreCase(role)) {
+
+        } else {
+            throw new SecurityException("You are not allowed to update doctor details");
+        }
+
+        if (specialization != null && !specialization.isBlank()) {
+            doctor.setSpecialization(specialization);
+        }
+        if (email != null && !email.isBlank()) {
+            doctor.getUser().setEmail(email);
+        }
+        if (mobile != null && !mobile.isBlank()) {
+            doctor.getUser().setMobile(mobile);
+        }
+        if (firstName != null && !firstName.isBlank()) {
+            doctor.getUser().setFirstName(firstName);
+        }
+        if (lastName != null && !lastName.isBlank()) {
+            doctor.getUser().setLastName(lastName);
+        }
+        if (verificationStatus != null && !verificationStatus.isBlank()) {
+            doctor.setVerificationStatus(verificationStatus);
+        }
+        if (docFile != null && !docFile.isEmpty()) {
+            doctor.setDocument(docFile.getBytes());
+        }
+        if (active != null) {
+            doctor.getUser().setActive(active);
+        }
+
+        doctorRepository.save(doctor);
+
+        UpdateDoctorResponse res = new UpdateDoctorResponse();
+        res.setVerificationStatus(doctor.getVerificationStatus());
+        res.setDoctorId(doctor.getId());
+        res.setEmail(doctor.getUser().getEmail());
+        res.setMobile(doctor.getUser().getMobile());
+        res.setFileSize(doctor.getDocument().length);
+        res.setFirstName(doctor.getUser().getFirstName());
+        res.setLastName(doctor.getUser().getLastName());
+        res.setSpecialization(doctor.getSpecialization());
+
+        return res;
     }
 }

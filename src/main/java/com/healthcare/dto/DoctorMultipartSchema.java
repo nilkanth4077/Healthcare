@@ -5,7 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class DoctorMultipartSchema {
 
-    @Schema(type = "string", format = "binary", description = "Document file")
+    @Schema(type = "string", format = "binary", description = "Document file (Optional)")
     public MultipartFile documentFile;
 
 }
