@@ -1,8 +1,11 @@
 package com.healthcare.controller;
 
 import com.healthcare.dto.*;
+import com.healthcare.entity.Appointment;
 import com.healthcare.entity.Doctor;
 import com.healthcare.entity.Specialization;
+import com.healthcare.exception.UserException;
+import com.healthcare.service.AppointmentService;
 import com.healthcare.service.DoctorService;
 import com.healthcare.service.DoctorSlotService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +33,9 @@ public class AnonymousController {
 
     @Autowired
     private DoctorSlotService slotService;
+
+    @Autowired
+    private AppointmentService appointmentService;
 
     @GetMapping("/speciality/all")
     public StandardDTO<List<Specialization>> getAll() {
@@ -99,4 +105,43 @@ public class AnonymousController {
         }
     }
 
+    @PostMapping("/send/email/roomDetails")
+    public ResponseEntity<StandardDTO<String>> sendRoomDetails(
+            @RequestParam("appointmentId") Long appointmentId,
+            @RequestHeader("Authorization") String token) {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            appointmentService.sendEmailWithRoomId(appointmentId, actualToken);
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", null, null)
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null, null)
+            );
+        }
+    }
+
+    @GetMapping("/get/appointment")
+    public ResponseEntity<StandardDTO<Map<String, Object>>> getAppointmentBySlotId(
+            @RequestParam("slotId") Long slotId,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            Appointment appointment = appointmentService.findAppointmentBySlotId(slotId, actualToken);
+
+            Map<String, Object> res = new HashMap<>();
+            res.put("appointmentId", appointment.getId());
+            res.put("appointmentStatus", appointment.getStatus());
+
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", res, null)
+            );
+        } catch (UserException e) {
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", null, null)
+            );
+        }
+    }
 }

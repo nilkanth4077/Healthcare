@@ -194,7 +194,7 @@ public class AuthController {
             responseData.put("user", userByEmail);
 
             return ResponseEntity.ok(
-                    new StandardDTO<>(HttpStatus.OK.value(), "Slots added successfully", responseData, null)
+                    new StandardDTO<>(HttpStatus.OK.value(), "Login successful", responseData, null)
             );
 
         } catch (AuthenticationException ex) {

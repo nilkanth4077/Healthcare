@@ -1,10 +1,12 @@
 package com.healthcare.controller;
 
 import com.healthcare.dto.AppointmentResponse;
+import com.healthcare.dto.BookedAppointment;
 import com.healthcare.dto.StandardDTO;
 import com.healthcare.dto.UpdateSlotResponse;
 import com.healthcare.entity.Appointment;
 import com.healthcare.entity.Doctor;
+import com.healthcare.exception.UserException;
 import com.healthcare.service.AppointmentService;
 import com.healthcare.service.DoctorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +68,42 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                     new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null, null)
             );
+        }
+    }
+
+    @GetMapping("/booked/appointments")
+    public StandardDTO<List<BookedAppointment>> getMyBookedAppointments(@RequestHeader("Authorization") String token) throws UserException {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            List<Appointment> appList = appointmentService.getBookedAppointmentsOfUser(actualToken);
+
+            List<BookedAppointment> res = new ArrayList<>();
+
+            for (Appointment a : appList) {
+                BookedAppointment ba = new BookedAppointment();
+                ba.setAppointmentId(a.getId());
+                ba.setUser(a.getUser());
+                ba.setAppointmentStatus(a.getStatus());
+                ba.setDoctorFirstName(a.getSlot().getDoctor().getUser().getFirstName());
+                ba.setDoctorLastName(a.getSlot().getDoctor().getUser().getLastName());
+                ba.setDoctorMobile(a.getSlot().getDoctor().getUser().getMobile());
+                ba.setDoctorId(a.getSlot().getDoctor().getUser().getId());
+                ba.setEndTime(a.getSlot().getEndTime());
+                ba.setSpecialization(a.getSlot().getDoctor().getSpecialization());
+                ba.setSlotId(a.getSlot().getId());
+                ba.setSlotType(a.getSlot().getSlotType());
+                ba.setStartTime(a.getSlot().getStartTime());
+                ba.setDoctorEmail(a.getSlot().getDoctor().getUser().getEmail());
+
+                res.add(ba);
+            }
+
+            Map<String, Object> metaData = new HashMap<>();
+            metaData.put("count", res.size());
+
+            return new StandardDTO<>(HttpStatus.OK.value(), "Appointments fetched successfully", res, metaData);
+        } catch (Exception e) {
+            return new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null, null);
         }
     }
 }

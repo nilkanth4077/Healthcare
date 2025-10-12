@@ -8,14 +8,15 @@ import com.healthcare.entity.User;
 import com.healthcare.exception.UserException;
 import com.healthcare.repository.AppointmentRepo;
 import com.healthcare.repository.DoctorSlotRepository;
+import com.healthcare.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class AppointmentService {
@@ -30,7 +31,13 @@ public class AppointmentService {
     private UserService userService;
 
     @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
     private DoctorService doctorService;
+
+    @Autowired
+    private EmailService emailService;
 
     public AppointmentResponse bookSlot(Long slotId, String token) throws UserException {
         DoctorSlot slot = slotRepo.findById(slotId)
@@ -85,6 +92,7 @@ public class AppointmentService {
 
         for (Appointment appointment : appointments) {
             Map<String, Object> map = new HashMap<>();
+            map.put("slotId", appointment.getSlot().getId());
             map.put("appointmentId", appointment.getId());
             map.put("patientName", appointment.getUser().getFirstName() + " " + appointment.getUser().getLastName());
             map.put("patientEmail", appointment.getUser().getEmail());
@@ -101,5 +109,62 @@ public class AppointmentService {
         }
 
         return res;
+    }
+
+    public List<Appointment> getBookedAppointmentsOfUser(String token) throws UserException {
+        User sessionUser = userService.getProfileByToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with provided token"));
+
+        return appointmentRepo.findByUserId(sessionUser.getId());
+    }
+
+    public void sendEmailWithRoomId(Long appointmentId, String token) throws UserException {
+        User sessionUser = userService.getProfileByToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with provided token"));
+        Appointment appointment = appointmentRepo.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+
+        if (sessionUser.getRole().equals("USER") || sessionUser.getRole().equals("DOCTOR")) {
+            LocalDateTime dateTime = LocalDateTime.parse(appointment.getSlot().getStartTime().toString());
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            String formattedDate = dateTime.format(formatter);
+
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+            String formattedTime = dateTime.format(timeFormatter);
+
+            String roomString = appointment.getUser().getEmail() + "_"
+                    + appointment.getSlot().getDoctor().getUser().getEmail() + "_"
+                    + appointment.getId();
+            String roomId = UUID.nameUUIDFromBytes(roomString.getBytes(StandardCharsets.UTF_8)).toString();
+
+            String mailContent = "Appointment Id: " + appointment.getId() + "\n"
+                    + "Patient Email: " + appointment.getUser().getEmail() + "\n"
+                    + "Doctor Email: " + appointment.getSlot().getDoctor().getUser().getEmail() + "\n"
+                    + "Date: " + formattedDate + "\n"
+                    + "Time Slot: " + formattedTime + "\n"
+                    + "Room Id: " + roomId;
+
+            if (!appointment.isCallEmailSent()) {
+                emailService.sendSimpleMessage(appointment.getUser().getEmail(), "Room Id for video call", mailContent);
+                emailService.sendSimpleMessage(appointment.getSlot().getDoctor().getUser().getEmail(), "Room Id for video call", mailContent);
+                appointment.setCallEmailSent(true);
+                appointmentRepo.save(appointment);
+            }
+        } else {
+            throw new IllegalArgumentException("You are not allowed to start this call");
+        }
+    }
+
+    public Appointment findAppointmentBySlotId(Long slotId, String token) throws UserException {
+        User sessionUser = userService.getProfileByToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with provided token"));
+
+        if (sessionUser.getEmail().equals(jwtUtil.extractEmail(token))) {
+            return appointmentRepo.findBySlotId(slotId)
+                    .orElseThrow(() -> new IllegalArgumentException("Appointment not found with slot Id: " + slotId));
+        } else {
+            throw new IllegalArgumentException("Unauthorized entity");
+        }
     }
 }
