@@ -19,4 +19,6 @@ public interface DoctorSlotRepository extends JpaRepository<DoctorSlot, Long> {
     @Query("SELECT s FROM DoctorSlot s JOIN FETCH s.doctor d WHERE s.id = :slotId")
     DoctorSlot findSlotWithDoctor(Long slotId);
 
+    List<DoctorSlot> findByEndTimeBeforeAndAvailableTrue(LocalDateTime time);
+
 }

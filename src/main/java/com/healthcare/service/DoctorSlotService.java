@@ -197,4 +197,18 @@ public class DoctorSlotService {
         slotRepository.deleteById(id);
 
     }
+
+    public String deleteExpiredSlots(String token) {
+        if (!token.isEmpty()) {
+            List<DoctorSlot> slots = slotRepository.findByEndTimeBeforeAndAvailableTrue(LocalDateTime.now());
+
+            for (DoctorSlot slot : slots) {
+                slot.setAvailable(false);
+
+                slotRepository.save(slot);
+            }
+            return "Expired slots deleted successfully";
+        }
+        return "Invalid token";
+    }
 }

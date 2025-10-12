@@ -4,6 +4,7 @@ import com.healthcare.dto.*;
 import com.healthcare.entity.Doctor;
 import com.healthcare.entity.Specialization;
 import com.healthcare.service.DoctorService;
+import com.healthcare.service.DoctorSlotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,6 +16,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +27,9 @@ public class AnonymousController {
 
     @Autowired
     private DoctorService doctorService;
+
+    @Autowired
+    private DoctorSlotService slotService;
 
     @GetMapping("/speciality/all")
     public StandardDTO<List<Specialization>> getAll() {
@@ -71,6 +76,21 @@ public class AnonymousController {
             UpdateDoctorResponse response = doctorService.updateDoctorDetails(doctorId, firstName, lastName, email, verificationStatus, specialization, mobile, active, documentFile, actualToken);
             return ResponseEntity.ok(
                     new StandardDTO<>(HttpStatus.OK.value(), "Doctor details updated successfully", response, null)
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null, null)
+            );
+        }
+    }
+
+    @PutMapping("/slot/delete/expiredSlot")
+    public ResponseEntity<StandardDTO<String>> deleteExpiredSlots(@RequestHeader("Authorization") String token) {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            String res = slotService.deleteExpiredSlots(actualToken);
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), res, null, null)
             );
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
