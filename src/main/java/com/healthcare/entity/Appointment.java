@@ -27,6 +27,6 @@ public class Appointment {
     @Column(nullable = false)
     private String status;
 
-    @Column(name = "call_email_sent", nullable = false)
+    @Column(name = "call_email_sent")
     private boolean callEmailSent = false;
 }
