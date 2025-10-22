@@ -116,9 +116,9 @@ public class AnonymousController {
                     new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", null, null)
             );
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null, null)
-            );
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new StandardDTO<>(400, e.getMessage(), null, null));
         }
     }
 
