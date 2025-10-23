@@ -123,7 +123,7 @@ public class AnonymousController {
     }
 
     @GetMapping("/get/appointment")
-    public ResponseEntity<StandardDTO<Map<String, Object>>> getAppointmentBySlotId(
+    public ResponseEntity<StandardDTO<Map<String, Object>>> getAppointmentBySlotId (
             @RequestParam("slotId") Long slotId,
             @RequestHeader("Authorization") String token
     ) {
