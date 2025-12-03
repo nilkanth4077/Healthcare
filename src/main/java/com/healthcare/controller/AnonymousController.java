@@ -134,6 +134,8 @@ public class AnonymousController {
             Map<String, Object> res = new HashMap<>();
             res.put("appointmentId", appointment.getId());
             res.put("appointmentStatus", appointment.getStatus());
+            res.put("startTime", appointment.getSlot().getStartTime());
+            res.put("endTime", appointment.getSlot().getEndTime());
 
             return ResponseEntity.ok(
                     new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", res, null)
