@@ -61,7 +61,6 @@ public class DoctorController {
         log.setActorRole(user.getRole());
         log.setTimestamp(LocalDateTime.now());
         log.setIpAddress(request.getRemoteAddr());
-
         auditLogRepo.save(log);
 
         StandardDTO<String> rs = new StandardDTO<>();
