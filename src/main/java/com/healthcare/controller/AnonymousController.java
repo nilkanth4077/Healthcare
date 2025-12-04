@@ -136,13 +136,14 @@ public class AnonymousController {
             res.put("appointmentStatus", appointment.getStatus());
             res.put("startTime", appointment.getSlot().getStartTime());
             res.put("endTime", appointment.getSlot().getEndTime());
+            res.put("doctorEmail", appointment.getSlot().getDoctor().getUser().getEmail());
 
             return ResponseEntity.ok(
                     new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", res, null)
             );
         } catch (UserException e) {
-            return ResponseEntity.ok(
-                    new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", null, null)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), "Check your mail box for room details", null, null)
             );
         }
     }
