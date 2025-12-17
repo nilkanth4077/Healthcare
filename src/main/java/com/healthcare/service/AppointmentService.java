@@ -167,4 +167,12 @@ public class AppointmentService {
             throw new IllegalArgumentException("Unauthorized entity");
         }
     }
+
+    public List<Appointment> getAllAppointments(String actualToken) throws NoSuchFieldException {
+        List<Appointment> appointments = appointmentRepo.findAll();
+         if(appointments.isEmpty()) {
+             throw new NoSuchFieldException("No appointment found");
+         }
+         return appointments;
+    }
 }

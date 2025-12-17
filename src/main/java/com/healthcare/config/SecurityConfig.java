@@ -29,7 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/user/**").hasRole("USER")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/doctor/**").hasRole("DOCTOR")
-                        .requestMatchers("/get/**", "/slot/**", "/send/**").hasAnyRole("USER", "ADMIN", "DOCTOR")
+                        .requestMatchers("/get/**", "/slot/**", "/send/**", "/update/user").hasAnyRole("USER", "ADMIN", "DOCTOR")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

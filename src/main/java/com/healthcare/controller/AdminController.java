@@ -1,17 +1,18 @@
 package com.healthcare.controller;
 
+import com.healthcare.dto.AppointmentResponse;
+import com.healthcare.dto.BookedAppointment;
 import com.healthcare.dto.StandardDTO;
-import com.healthcare.entity.AuditLog;
-import com.healthcare.entity.Doctor;
-import com.healthcare.entity.Specialization;
-import com.healthcare.entity.User;
+import com.healthcare.entity.*;
 import com.healthcare.exception.UserException;
 import com.healthcare.repository.AuditLogRepo;
+import com.healthcare.service.AppointmentService;
 import com.healthcare.service.DoctorService;
 import com.healthcare.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +39,9 @@ public class AdminController {
 
     @Autowired
     private DoctorService doctorService;
+
+    @Autowired
+    private AppointmentService appointmentService;
 
     @GetMapping("/hello")
     public StandardDTO<String> hello(@RequestHeader String token) throws UserException {
@@ -99,5 +103,62 @@ public class AdminController {
         res.put("id", id);
 
         return new StandardDTO<>(HttpStatus.OK.value(), "Doctor deleted successfully", res, null);
+    }
+
+    @GetMapping("/get/all-users")
+    public ResponseEntity<StandardDTO<List<User>>> getAllUsers(
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            List<User> users = userService.getAllUsers(actualToken);
+
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "Users fetched successfully", users, null)
+            );
+        } catch (UserException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), "Error fetching users", null, null)
+            );
+        }
+    }
+
+    @GetMapping("/get/all-appointments")
+    public ResponseEntity<StandardDTO<List<BookedAppointment>>> getAllAppointments(
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            List<Appointment> appointments = appointmentService.getAllAppointments(actualToken);
+
+            List<BookedAppointment> res = new ArrayList<>();
+
+            for (Appointment a : appointments) {
+                BookedAppointment ba = new BookedAppointment();
+                ba.setAppointmentId(a.getId());
+                ba.setUser(a.getUser());
+                ba.setAppointmentStatus(a.getStatus());
+                ba.setDoctorFirstName(a.getSlot().getDoctor().getUser().getFirstName());
+                ba.setDoctorLastName(a.getSlot().getDoctor().getUser().getLastName());
+                ba.setDoctorMobile(a.getSlot().getDoctor().getUser().getMobile());
+                ba.setDoctorId(a.getSlot().getDoctor().getUser().getId());
+                ba.setEndTime(a.getSlot().getEndTime());
+                ba.setSpecialization(a.getSlot().getDoctor().getSpecialization());
+                ba.setSlotId(a.getSlot().getId());
+                ba.setSlotType(a.getSlot().getSlotType());
+                ba.setStartTime(a.getSlot().getStartTime());
+                ba.setDoctorEmail(a.getSlot().getDoctor().getUser().getEmail());
+
+                res.add(ba);
+            }
+
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "Appointments fetched successfully", res, null)
+            );
+        } catch (NoSuchFieldException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), "Error fetching appointments", null, null)
+            );
+        }
     }
 }

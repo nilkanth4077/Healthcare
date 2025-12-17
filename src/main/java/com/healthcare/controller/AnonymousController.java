@@ -4,10 +4,12 @@ import com.healthcare.dto.*;
 import com.healthcare.entity.Appointment;
 import com.healthcare.entity.Doctor;
 import com.healthcare.entity.Specialization;
+import com.healthcare.entity.User;
 import com.healthcare.exception.UserException;
 import com.healthcare.service.AppointmentService;
 import com.healthcare.service.DoctorService;
 import com.healthcare.service.DoctorSlotService;
+import com.healthcare.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -33,6 +35,9 @@ public class AnonymousController {
 
     @Autowired
     private DoctorSlotService slotService;
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private AppointmentService appointmentService;
@@ -139,11 +144,51 @@ public class AnonymousController {
             res.put("doctorEmail", appointment.getSlot().getDoctor().getUser().getEmail());
 
             return ResponseEntity.ok(
-                    new StandardDTO<>(HttpStatus.OK.value(), "Check your mail box for room details", res, null)
+                    new StandardDTO<>(HttpStatus.OK.value(), "Appointment details fetched successfully", res, null)
             );
         } catch (UserException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), "Check your mail box for room details", null, null)
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), "Error fetching appointment", null, null)
+            );
+        }
+    }
+
+    @GetMapping("/get/user")
+    public ResponseEntity<StandardDTO<User>> getUserById(
+            @RequestParam("patientId") Long patientId,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            User user = userService.getUserById(patientId, actualToken);
+
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "User details fetched successfully", user, null)
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), "Error fetching user", null, null)
+            );
+        }
+    }
+
+    @PutMapping(value = "/update/user")
+    public ResponseEntity<StandardDTO<User>> updateUser(@RequestParam("patientId") Long patientId,
+                                                                        @RequestParam(name = "firstName", required = false) String firstName,
+                                                                        @RequestParam(name = "lastName", required = false) String lastName,
+                                                                        @RequestParam(name = "email", required = false) String email,
+                                                                        @RequestParam(name = "mobile", required = false) String mobile,
+                                                                        @RequestParam(name = "active", required = false) Boolean active,
+                                                                        @RequestHeader("Authorization") String token) {
+        try {
+            String actualToken = token.replace("Bearer ", "");
+            User response = userService.updateUserDetails(patientId, firstName, lastName, email, mobile, active, actualToken);
+            return ResponseEntity.ok(
+                    new StandardDTO<>(HttpStatus.OK.value(), "User details updated successfully", response, null)
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new StandardDTO<>(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null, null)
             );
         }
     }
